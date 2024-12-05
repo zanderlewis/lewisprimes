@@ -1,11 +1,11 @@
-use num_bigint::{BigUint, ToBigUint, RandBigInt};
+use num_bigint::{BigUint, RandBigInt, ToBigUint};
 use num_traits::{One, Zero};
-use std::time::Instant;
 use rand::thread_rng;
 use std::fs::OpenOptions;
 use std::io::{self, Write};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 use threadpool::ThreadPool;
 
 // Function to perform the Miller-Rabin primality test
@@ -25,7 +25,8 @@ fn miller_rabin(n: &BigUint, k: u32) -> bool {
     }
 
     'witness_loop: for _ in 0..k {
-        let a = thread_rng().gen_biguint_range(&2.to_biguint().unwrap(), &(n - 2.to_biguint().unwrap()));
+        let a = thread_rng()
+            .gen_biguint_range(&2.to_biguint().unwrap(), &(n - 2.to_biguint().unwrap()));
         let mut x = a.modpow(&d, n);
         if x == One::one() || x == n - 1.to_biguint().unwrap() {
             continue;
@@ -45,8 +46,9 @@ fn miller_rabin(n: &BigUint, k: u32) -> bool {
 fn find_lewis_prime(n: u32) -> Option<BigUint> {
     let ten = 10.to_biguint().unwrap();
     let candidate = ten.pow(n) - 11.to_biguint().unwrap();
-    
-    if miller_rabin(&candidate, 40) { // 40 iterations for a good balance between speed and accuracy
+
+    if miller_rabin(&candidate, 40) {
+        // 40 iterations for a good balance between speed and accuracy
         Some(candidate)
     } else {
         None
@@ -72,10 +74,9 @@ fn main() -> io::Result<()> {
     }
 
     // Open the file in append mode
-    let file = Arc::new(Mutex::new(OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)?));
+    let file = Arc::new(Mutex::new(
+        OpenOptions::new().create(true).append(true).open(path)?,
+    ));
 
     // Create a thread pool
     let pool = ThreadPool::new(num_threads);

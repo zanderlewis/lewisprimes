@@ -4,7 +4,7 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 
 # Read the n values from the file
-with open('so_far.txt', 'r') as file:
+with open("so_far.txt", "r") as file:
     data = file.readlines()
 
 # Convert the data to a list of integers
@@ -27,7 +27,7 @@ for degree in range(1, 11):
         best_score = score
         best_degree = degree
 
-print(f'Best polynomial degree: {best_degree} with score: {best_score:.2f}')
+print(f"Best polynomial degree: {best_degree} with score: {best_score:.2f}")
 
 # Perform polynomial regression
 poly = PolynomialFeatures(degree=best_degree)  # You can adjust the degree as needed
@@ -42,18 +42,30 @@ predicted_n_values = model.predict(new_indices_poly)
 
 # Plot the actual and estimated n values
 plt.figure(figsize=(10, 6))
-plt.plot(range(len(n_values)), n_values, 'bo', label='Actual Lewis Primes n values')
-plt.plot(range(len(n_values)), model.predict(indices_poly), 'b-', label='Polynomial Fit')
-plt.plot(range(len(n_values), len(n_values) + 20), predicted_n_values, 'ro', label='Estimated n values')
-plt.plot(range(len(n_values), len(n_values) + 20), model.predict(new_indices_poly), 'r-', label='Estimated Polynomial Fit')
-plt.xlabel('Index')
-plt.ylabel('n')
-plt.title('Lewis Primes n values and Estimated n values')
+plt.plot(range(len(n_values)), n_values, "bo", label="Actual Lewis Primes n values")
+plt.plot(
+    range(len(n_values)), model.predict(indices_poly), "b-", label="Polynomial Fit"
+)
+plt.plot(
+    range(len(n_values), len(n_values) + 20),
+    predicted_n_values,
+    "ro",
+    label="Estimated n values",
+)
+plt.plot(
+    range(len(n_values), len(n_values) + 20),
+    model.predict(new_indices_poly),
+    "r-",
+    label="Estimated Polynomial Fit",
+)
+plt.xlabel("Index")
+plt.ylabel("n")
+plt.title("Lewis Primes n values and Estimated n values")
 plt.legend()
 plt.grid(True)
 plt.show()
 
 # Print the estimated n values
-print('Estimated n values:')
+print("Estimated n values:")
 for i, n in enumerate(predicted_n_values):
-    print(f'{len(n_values) + i + 1}: {n:.0f}')
+    print(f"{len(n_values) + i + 1}: {n:.0f}")
