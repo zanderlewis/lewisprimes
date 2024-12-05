@@ -1,8 +1,10 @@
+use clap::{Arg, Command};
 use num_bigint::{BigUint, RandBigInt, ToBigUint};
+use num_format::{Locale, ToFormattedString};
 use num_traits::{One, Zero};
 use rand::thread_rng;
-use std::fs::OpenOptions;
-use std::io::{self, Write};
+use std::fs::{File, OpenOptions};
+use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
@@ -43,11 +45,11 @@ fn miller_rabin(n: &BigUint, k: u32) -> bool {
 }
 
 // Function to check for Lewis Primes: 10^n - 11
-fn find_lewis_prime(n: u32) -> Option<BigUint> {
+fn find_lewis_prime(n: u32, iterations: u32) -> Option<BigUint> {
     let ten = 10.to_biguint().unwrap();
     let candidate = ten.pow(n) - 11.to_biguint().unwrap();
-    // 40 iterations for a good balance between speed and accuracy
-    if miller_rabin(&candidate, 40) {
+
+    if miller_rabin(&candidate, iterations) {
         Some(candidate)
     } else {
         None
@@ -55,55 +57,87 @@ fn find_lewis_prime(n: u32) -> Option<BigUint> {
 }
 
 fn main() -> io::Result<()> {
-    let start = Instant::now();
-    let num_threads = 4; // Adjust the number of threads as needed
-    let lower_limit = 5_001; // Set the lower limit
-    let upper_limit = 10_000; // Set the upper limit
+    let matches = Command::new("Lewis Primes Checker")
+        .version("1.0")
+        .author("Zander Lewis <zander@zanderlewis.dev>")
+        .about("Checks for Lewis Primes or runs high accuracy checks")
+        .arg(
+            Arg::new("high_accuracy")
+                .short('a')
+                .long("high_accuracy")
+                .action(clap::ArgAction::SetTrue),
+        )
+        .get_matches();
 
-    // Delete the file if it exists
-    let path = "primes.txt";
-    if Path::new(path).exists() {
-        std::fs::remove_file(path)?;
-    }
+    if matches.get_one::<bool>("high_accuracy") == Some(&true) {
+        // High accuracy mode
+        let path = "so_far.txt";
+        let file = File::open(path)?;
+        let reader = BufReader::new(file);
 
-    // Append so_far.txt to primes.txt
-    let so_far = "so_far.txt";
-    if Path::new(so_far).exists() {
-        std::fs::copy(so_far, path)?;
-    }
-
-    // Open the file in append mode
-    let file = Arc::new(Mutex::new(
-        OpenOptions::new().create(true).append(true).open(path)?,
-    ));
-
-    // Create a thread pool
-    let pool = ThreadPool::new(num_threads);
-
-    for n in lower_limit..=upper_limit {
-        let file = Arc::clone(&file);
-        pool.execute(move || {
-            if let Some(prime) = find_lewis_prime(n) {
-                println!("Lewis Prime for n = {}: {}", n, prime);
-                let mut file = file.lock().unwrap();
-                writeln!(file, "{}", n).unwrap();
+        for line in reader.lines() {
+            let n: u32 = line?.trim().parse().unwrap();
+            if let Some(_) = find_lewis_prime(n, 400) {
+                println!("High accuracy check passed for n = {}", n);
             } else {
-                println!("No Lewis Prime for n = {}", n);
+                println!("High accuracy check failed for n = {}", n);
             }
-        });
+        }
+    } else {
+        // Default mode
+        let start = Instant::now();
+        let num_threads = 4; // Adjust the number of threads as needed
+        let lower_limit = 10_024; // Set the lower limit
+        let upper_limit = 20_000; // Set the upper limit
+
+        // Delete the file if it exists
+        let path = "primes.txt";
+        if Path::new(path).exists() {
+            std::fs::remove_file(path)?;
+        }
+
+        // Append so_far.txt to primes.txt
+        let so_far = "so_far.txt";
+        if Path::new(so_far).exists() {
+            std::fs::copy(so_far, path)?;
+        }
+
+        // Open the file in append mode
+        let file = Arc::new(Mutex::new(
+            OpenOptions::new().create(true).append(true).open(path)?,
+        ));
+
+        // Create a thread pool
+        let pool = ThreadPool::new(num_threads);
+
+        for n in lower_limit..=upper_limit {
+            let file = Arc::clone(&file);
+            pool.execute(move || {
+                if let Some(_) = find_lewis_prime(n, 40) {
+                    println!("Lewis Prime for n = {}", n.to_formatted_string(&Locale::en));
+                    let mut file = file.lock().unwrap();
+                    writeln!(file, "{}", n).unwrap();
+                } else {
+                    println!(
+                        "No Lewis Prime for n = {}",
+                        n.to_formatted_string(&Locale::en)
+                    );
+                }
+            });
+        }
+
+        // Wait for all threads to finish
+        pool.join();
+
+        let duration = start.elapsed();
+        println!("Execution time: {:?}", duration);
+
+        // Delete so_far.txt and rename primes.txt to so_far.txt
+        if Path::new(so_far).exists() {
+            std::fs::remove_file(so_far)?;
+        }
+        std::fs::rename(path, so_far)?;
     }
-
-    // Wait for all threads to finish
-    pool.join();
-
-    let duration = start.elapsed();
-    println!("Execution time: {:?}", duration);
-
-    // Delete so_far.txt and rename primes.txt to so_far.txt
-    if Path::new(so_far).exists() {
-        std::fs::remove_file(so_far)?;
-    }
-    std::fs::rename(path, so_far)?;
 
     Ok(())
 }
