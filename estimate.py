@@ -56,4 +56,4 @@ plt.show()
 # Print the estimated n values
 print('Estimated n values:')
 for i, n in enumerate(predicted_n_values):
-    print(f'{len(n_values) + i}: {n:.0f}')
+    print(f'{len(n_values) + i + 1}: {n:.0f}')
