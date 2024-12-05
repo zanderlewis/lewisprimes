@@ -46,9 +46,8 @@ fn miller_rabin(n: &BigUint, k: u32) -> bool {
 fn find_lewis_prime(n: u32) -> Option<BigUint> {
     let ten = 10.to_biguint().unwrap();
     let candidate = ten.pow(n) - 11.to_biguint().unwrap();
-
+    // 40 iterations for a good balance between speed and accuracy
     if miller_rabin(&candidate, 40) {
-        // 40 iterations for a good balance between speed and accuracy
         Some(candidate)
     } else {
         None
