@@ -87,7 +87,7 @@ fn main() -> io::Result<()> {
         // Default mode
         let start = Instant::now();
         let num_threads = 4; // Adjust the number of threads as needed
-        let lower_limit = 10_024; // Set the lower limit
+        let lower_limit = 11_810; // Set the lower limit
         let upper_limit = 20_000; // Set the upper limit
 
         // Delete the file if it exists
